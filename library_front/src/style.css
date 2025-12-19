@@ -1,0 +1,26 @@
+/* 전체 배경/글자 기본 대비 */
+html, body, #app {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+nav, .navbar {
+  background: #111;
+}
+
+nav a,
+nav a:visited,
+nav a:active,
+nav a:focus,
+.navbar a,
+.navbar a:visited,
+.navbar a:active,
+.navbar a:focus {
+  color: #fff !important;
+  text-decoration: none;
+}
+
+nav a:hover, .navbar a:hover {
+  opacity: 0.8;
+}
