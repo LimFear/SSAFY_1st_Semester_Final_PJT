@@ -25,11 +25,13 @@ class Book(models.Model):
         blank=True
     )
 
-class Article(models.Model):
-    book = models.ForeignKey(Book, on_delete=models.CASCADE)
-    title = models.CharField(max_length=50)
-    content = models.TextField(max_length=500)
+# class Article(models.Model):
+#     book = models.ForeignKey(Book, on_delete=models.CASCADE)
+#     title = models.CharField(max_length=50)
+#     content = models.TextField(max_length=500)
+#     created_at = models.DateField(auto_now_add=True)
+#     updated_at = models.DateField(auto_now=True)
 
 class Comment(models.Model):
-    article = models.ForeignKey(Article, on_delete=models.CASCADE)
+    book = models.ForeignKey(Book, on_delete=models.CASCADE)
     content = models.CharField(max_length=100)
