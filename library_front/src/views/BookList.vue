@@ -14,11 +14,6 @@ const query = ref('')
 
 onMounted(async () => {
   await booksStore.fetchBooks()
-
-  const coverValues = booksStore.books.map((book) => book.cover)
-  console.log('cover 샘플 10개:', coverValues.slice(0, 10))
-  console.log('cover 있는 책 개수:', coverValues.filter((value) => String(value ?? '').trim().length > 0).length)
-
 })
 
 const filteredBooks = computed(() => {
@@ -62,7 +57,6 @@ function toggleFavorite(bookId) {
 
         <div class="body">
           <div class="title">{{ book.title }}</div>
-          <div style="font-size:12px; color:#888;">{{ book.cover }}</div>
           <div class="author">{{ book.author }}</div>
 
           <div class="actions">

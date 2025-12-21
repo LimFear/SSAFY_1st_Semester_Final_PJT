@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { http } from '@/api/http'
+import api from '@/api/axios'
 
 export const useCommentsStore = defineStore('comments', {
   state: () => ({
@@ -13,8 +13,10 @@ export const useCommentsStore = defineStore('comments', {
       this.isLoading = true
       this.error = ''
       try {
-        const response = await http.get(`/books/${bookId}/comments/`)
-        this.items = Array.isArray(response.data) ? response.data : (response.data?.results ?? [])
+        const response = await api.get(`/articles/books/${bookId}/comments/`)
+        this.items = Array.isArray(response.data)
+          ? response.data
+          : (response.data?.results ?? [])
       } catch (error) {
         this.error = '댓글을 불러오지 못했습니다.'
         this.items = []

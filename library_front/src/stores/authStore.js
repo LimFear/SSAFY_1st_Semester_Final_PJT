@@ -10,26 +10,28 @@ export const useAuthStore = defineStore('auth', () => {
 
   const signup = async function(obj){
     try{
-      const response = await api.post('/accounts/signup/', {
+      const response = await api.post('accounts/signup/', {
         username: obj.email,
         password1: obj.pw,
         password2: obj.check,
-      });
+      })
+
     } catch(error){
       console.log(error);
       window.alert(error);
     }
   }
 
+
   const signout = async function(){
-    await api.delete('/accounts/signout/');
+    await api.delete('accounts/signout/');
     accessToken.value = null;
     isLogined.value = false;
   }
 
   const login = async function(obj){
     try{
-      const response = await api.post('/accounts/token/', {
+      const response = await api.post('accounts/token/', {
         username: obj.email,
         password: obj.pw,
       });
@@ -46,7 +48,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const logout = async function() {
     try {
-      await api.post('/accounts/logout/');
+      await api.post('accounts/logout/');
     } catch (error) {
       console.log('Server logout failed or session expired');
     } finally {
@@ -58,7 +60,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const refresh = async function () {
     try {
-      const response = await api.post('/accounts/token/refresh/');
+      const response = await api.post('accounts/token/refresh/');
       accessToken.value = response.data.access;
       isLogined.value = true;
       console.log("Token Refreshed!")

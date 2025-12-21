@@ -3,7 +3,7 @@ import router from '@/router'
 
 // Instance..........
 const api = axios.create({
-  baseURL: import.meta.env.VITE_ROOT_URL,
+  baseURL: '/api/v1',
   withCredentials: true,
 })
 
@@ -28,15 +28,15 @@ api.interceptors.response.use(
     
     if (!originalRequest) return Promise.reject(error)
 
-    if (originalRequest.url.includes('/accounts/logout/') || 
-        originalRequest.url.includes('/accounts/token/refresh/')) {
+    if (originalRequest.url.includes('accounts/logout/') || 
+        originalRequest.url.includes('accounts/token/refresh/')) {
       return Promise.reject(error)
     }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
       try {
-        const response = await api.post('/accounts/token/refresh/')
+        const response = await api.post('accounts/token/refresh/')
         store.accessToken = response.data.access
         return api(originalRequest)
       } catch (refreshError) {

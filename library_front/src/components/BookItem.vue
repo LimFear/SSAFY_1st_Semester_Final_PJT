@@ -1,3 +1,4 @@
+<div class="book-card"></div>
 <script setup>
 import { computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -16,7 +17,7 @@ const authStore = useAuthStore()
 const bookId = computed(() => String(route.params.id))
 
 async function load() {
-  // 추천 표시하려면 전체 목록도 있어야 해서 보장
+  // 추천 표시하려면 전체 목록도 있어야 함
   if (booksStore.books.length === 0) {
     await booksStore.fetchBooks()
   }
@@ -103,7 +104,7 @@ function goDetail(nextId) {
 </template>
 
 <style scoped>
-.detail { border:1px solid #2a2a2a; border-radius:14px; padding:14px; background:#141414; }
+.detail { border:1px solid #2a2a2a; border-radius:14px; padding:14px; background:#ffffff; }
 .top { display:flex; gap:14px; align-items:flex-start; }
 .img { width:180px; height:240px; object-fit:cover; border-radius:12px; border:1px solid #2a2a2a; }
 .meta { flex:1; }
@@ -114,7 +115,7 @@ function goDetail(nextId) {
 .hr { border:0; border-top:1px solid #2a2a2a; margin:14px 0; }
 .desc { white-space:pre-wrap; line-height:1.6; opacity:.9; }
 .reco { display:flex; gap:10px; flex-wrap:wrap; }
-.recoItem { width:220px; text-align:left; border:1px solid #2a2a2a; background:#101010; color:inherit; border-radius:12px; overflow:hidden; cursor:pointer; padding:0; }
+.recoItem { width:220px; text-align:left; border:2px solid #2a2a2a; background:#ffffff; color:inherit; border-radius:12px; overflow:hidden; cursor:pointer; padding:0; }
 .recoItem img { width:100%; height:120px; object-fit:cover; display:block; border-bottom:1px solid #2a2a2a; }
 .recoText { padding:10px; }
 .error { color:#ff6b6b; }
