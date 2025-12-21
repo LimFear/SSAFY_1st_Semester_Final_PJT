@@ -10,8 +10,14 @@ const email = ref('')
 const pw = ref('')
 
 async function submit() {
-  const ok = await authStore.login({ email: email.value, pw: pw.value })
-  if (ok) router.push('/')
+    const obj = {
+        email: email.value,
+        pw: pw.value
+    }
+    await authStore.login(obj);
+    router.push('/');
+  // const ok = await authStore.login({ email: email.value, pw: pw.value })
+  // if (ok) router.push('/')
 }
 </script>
 

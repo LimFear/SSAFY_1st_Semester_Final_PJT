@@ -58,3 +58,8 @@ DRF + Vue (SPA)
 - navbar의 main, List, Login의 화면은 출력하는데에 성공함. 
 - List의 도서 표지는 출력이 안 되므로 확인 필요
 - SignUp 확인 필요
+
+12-21-01P **구현 완료**
+- Token => simpleJWT 인증방식으로 변경
+- Login 파트를 시험해볼 수 있게 변수명만 수정
+- Signup.vue 추가
