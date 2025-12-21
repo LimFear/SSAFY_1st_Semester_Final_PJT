@@ -34,7 +34,6 @@ INSTALLED_APPS = [
     'articles',
     'accounts',
     'rest_framework',
-    'rest_framework.authtoken',
     'dj_rest_auth',
     'django.contrib.sites',
     'allauth',
@@ -51,21 +50,34 @@ INSTALLED_APPS = [
 ]
 SITE_ID = 1
 
+# Simple JWT
+from datetime import timedelta
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
-    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
 }
 
-# ACCOUNT_SIGNUP_FIELDS = {
-#     'email': {
-#         'required': True,
-#         'label': 'Email Address',
-#     }
-# }
+REST_AUTH = {
+    'USE_JWT': True,
+    'TOKEN_MODEL': None,
+}
 
-# ACCOUNT_SIGNUP_FIELDS = ['email', 'username', 'password1', 'password2']
-# ACCOUNT_LOGIN_METHODS = ['email']
+SIMPLE_JWT = {
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': False,
+}
+
+
+# Token Auth
+# REST_FRAMEWORK = {
+#     'DEFAULT_AUTHENTICATION_CLASSES': [
+#         'rest_framework.authentication.TokenAuthentication',
+#     ],
+# }
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -78,6 +90,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
 ]
+
+CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",

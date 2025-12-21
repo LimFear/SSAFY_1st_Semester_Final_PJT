@@ -1,50 +1,72 @@
+import { ref, computed, watch } from 'vue'
 import { defineStore } from 'pinia'
-import { http, setAuthToken } from '@/api/http'
+import api from '@/api/axios';
 
-const TOKEN_KEY = 'library_token_v1'
+export const useAuthStore = defineStore('auth', () => {
 
-export const useAuthStore = defineStore('auth', {
-  state: () => ({
-    token: localStorage.getItem(TOKEN_KEY) || '',
-    loginError: '',
-  }),
+  const accessToken = ref(null);
 
-  getters: {
-    isLoggedIn(state) {
-      return Boolean(state.token)
-    },
-  },
+  const isLogined = ref(false);
 
-  actions: {
-    init() {
-      setAuthToken(this.token)
-    },
+  const signup = async function(obj){
+    try{
+      const response = await api.post('/accounts/signup/', {
+        username: obj.email,
+        password1: obj.pw,
+        password2: obj.check,
+      });
+    } catch(error){
+      console.log(error);
+      window.alert(error);
+    }
+  }
 
-    async login({ email, pw }) {
-      this.loginError = ''
+  const signout = async function(){
+    await api.delete('/accounts/signout/');
+    accessToken.value = null;
+    isLogined.value = false;
+  }
 
-      const response = await http.post('/accounts/login', { email, pw })
-      const token = response?.data?.token || ''
+  const login = async function(obj){
+    try{
+      const response = await api.post('/accounts/token/', {
+        username: obj.email,
+        password: obj.pw,
+      });
+      accessToken.value = response.data.access;
+      console.log(accessToken.value);
+      isLogined.value = true;
+      
+    } catch(error){
+      console.log(error);
+      window.alert(error);
+      isLogined.value = false;
+    }
+  }
 
-      if (!token) {
-        this.token = ''
-        localStorage.removeItem(TOKEN_KEY)
-        setAuthToken('')
-        this.loginError = '아이디/비밀번호가 올바르지 않습니다.'
-        return false
-      }
+  const logout = async function() {
+    try {
+      await api.post('/accounts/logout/');
+    } catch (error) {
+      console.log('Server logout failed or session expired');
+    } finally {
+      accessToken.value = null;
+      isLogined.value = false;
+      router.push('/');
+    }
+  }
 
-      this.token = token
-      localStorage.setItem(TOKEN_KEY, token)
-      setAuthToken(token)
-      return true
-    },
-
-    logout() {
-      this.token = ''
-      this.loginError = ''
-      localStorage.removeItem(TOKEN_KEY)
-      setAuthToken('')
-    },
-  },
-})
+  const refresh = async function () {
+    try {
+      const response = await api.post('/accounts/token/refresh/');
+      accessToken.value = response.data.access;
+      isLogined.value = true;
+      console.log("Token Refreshed!")
+    } catch {
+      accessToken.value = null;
+      isLogined.value = false;
+    }
+  }
+  
+  return { accessToken, isLogined, signup, signout, login, logout, refresh }
+}, {persist: true})
