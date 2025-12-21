@@ -16,8 +16,6 @@ async function submit() {
     }
     await authStore.login(obj);
     router.push('/');
-  // const ok = await authStore.login({ email: email.value, pw: pw.value })
-  // if (ok) router.push('/')
 }
 </script>
 

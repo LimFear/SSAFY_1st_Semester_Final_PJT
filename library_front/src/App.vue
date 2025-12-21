@@ -1,6 +1,22 @@
 <script setup>
 import { useAuthStore } from '@/stores/authStore'
-const authStore = useAuthStore()
+import { onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
+
+const authStore = useAuthStore();
+const router = useRouter();
+
+const userlogout = async function() {
+  authStore.logout();
+  await router.push('/');
+  console.log('logout OK!');
+}
+
+const usersignout = async function() {
+  await authStore.signout();
+  await router.push('/');
+  console.log('signout OK!');
+}
 </script>
 
 <template>
@@ -10,10 +26,11 @@ const authStore = useAuthStore()
     <nav class="menu">
       <RouterLink class="link" to="/">Main</RouterLink>
       <RouterLink class="link" to="/list">List</RouterLink>
-      <RouterLink class="link" to="/login">Login</RouterLink>
-      <RouterLink class="link" to="/signup">Signup</RouterLink>
+      <RouterLink v-if="!authStore.isLogined" class="link" to="/login">Login</RouterLink>
+      <RouterLink v-if="!authStore.isLogined" class="link" to="/signup">Signup</RouterLink>
 
-      <button v-if="authStore.isLoggedIn" class="btn" @click="authStore.logout()">Logout</button>
+      <button v-if="authStore.isLogined" @click="userlogout()">Logout</button>
+      <button v-if="authStore.isLogined" @click="usersignout()">Signout</button>
     </nav>
   </header>
 
