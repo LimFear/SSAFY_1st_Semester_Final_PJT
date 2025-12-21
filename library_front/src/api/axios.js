@@ -1,52 +1,53 @@
-// 1. axios instance
 import axios from 'axios'
+import router from '@/router'
 
+// Instance..........
 const api = axios.create({
   baseURL: import.meta.env.VITE_ROOT_URL,
   withCredentials: true,
 })
-export default api
 
-// 2. Request interceptor
-import { useAuthStore } from '@/stores/authStore'
+// Request..........
+api.interceptors.request.use(async (config) => {
+  const { useAuthStore } = await import('@/stores/authStore')
+  const store = useAuthStore()
 
-api.interceptors.request.use(
-  (config) => {
-    const store = useAuthStore()
-
-    if (store.accessToken) {
-      config.headers.Authorization =
-        `Bearer ${store.accessToken}`
-    }
-    return config
+  if (store.accessToken) {
+    config.headers.Authorization = `Bearer ${store.accessToken}`
   }
-)
+  return config
+})
 
-// 3. Response interceptor
-import { useRouter } from 'vue-router'
-const router = useRouter();
+// Response..........
+api.interceptors.response.use(
+  response => response,
+  async (error) => {
+    const { useAuthStore } = await import('@/stores/authStore')
+    const store = useAuthStore()
+    const originalRequest = error.config
+    
+    if (!originalRequest) return Promise.reject(error)
 
-api.interceptors.response.use((response) => response, async (error)=>{
-    const originalRequest = error.config;
-    const status = error.response?.status;
-    if (status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      const refresh = localStorage.getItem('refresh');
+    if (originalRequest.url.includes('/accounts/logout/') || 
+        originalRequest.url.includes('/accounts/token/refresh/')) {
+      return Promise.reject(error)
+    }
 
-      if (refresh) {
-        const response = await api.post('/accounts/token/refresh/', {
-          refresh
-        })
-        store.accessToken = response.data.access;
-        api.defaults.headers.common.Authorization = `Bearer ${response.data.access}`;
-        originalRequest.headers.Authorization = `Bearer ${response.data.access}`;
-        return api(originalRequest);
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true
+      try {
+        const response = await api.post('/accounts/token/refresh/')
+        store.accessToken = response.data.access
+        return api(originalRequest)
+      } catch (refreshError) {
+        store.accessToken = null
+        store.isLogined = false
+        router.push('/login')
+        return Promise.reject(refreshError)
       }
     }
-
-    if (status === 403) {
-      router.push({name: 'home'});
-    }
-    return Promise.reject(error);
+    return Promise.reject(error)
   }
 )
+
+export default api

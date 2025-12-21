@@ -2,11 +2,11 @@ import { ref, computed, watch } from 'vue'
 import { defineStore } from 'pinia'
 import api from '@/api/axios';
 
-export const useAuthStore = defineStore('counter', () => {
+export const useAuthStore = defineStore('auth', () => {
 
   const accessToken = ref(null);
-  const refreshToken = ref(null);
-  const username = ref(null);
+
+  const isLogined = ref(false);
 
   const signup = async function(obj){
     try{
@@ -23,6 +23,8 @@ export const useAuthStore = defineStore('counter', () => {
 
   const signout = async function(){
     await api.delete('/accounts/signout/');
+    accessToken.value = null;
+    isLogined.value = false;
   }
 
   const login = async function(obj){
@@ -31,38 +33,40 @@ export const useAuthStore = defineStore('counter', () => {
         username: obj.email,
         password: obj.pw,
       });
-
       accessToken.value = response.data.access;
-      refreshToken.value = response.data.refresh;
-      username.value = obj.id;
-
-      localStorage.setItem('refresh', refreshToken.value);
-      api.defaults.headers.common.Authorization = `Bearer ${accessToken.value}`
-
+      console.log(accessToken.value);
+      isLogined.value = true;
+      
     } catch(error){
       console.log(error);
       window.alert(error);
+      isLogined.value = false;
     }
   }
 
-  const logout = async function(){
-    // Token Logout
-    // try{
-    //   const response = await axios.post(`${BASE_URL}/accounts/logout/`);
-    //   token.value = null;
-    //   username.value = null;
-    // } catch(error){
-    //   console.log(error);
-    //   window.alert(error);
-    // }
+  const logout = async function() {
+    try {
+      await api.post('/accounts/logout/');
+    } catch (error) {
+      console.log('Server logout failed or session expired');
+    } finally {
+      accessToken.value = null;
+      isLogined.value = false;
+      router.push('/');
+    }
+  }
 
-    accessToken.value = null;
-    refreshToken.value = null;
-    username.value = null;
-
-    localStorage.removeItem('refresh');
-    delete api.defaults.headers.common.Authorization;
+  const refresh = async function () {
+    try {
+      const response = await api.post('/accounts/token/refresh/');
+      accessToken.value = response.data.access;
+      isLogined.value = true;
+      console.log("Token Refreshed!")
+    } catch {
+      accessToken.value = null;
+      isLogined.value = false;
+    }
   }
   
-  return { accessToken, refreshToken, username, signup, signout, login, logout }
+  return { accessToken, isLogined, signup, signout, login, logout, refresh }
 }, {persist: true})
