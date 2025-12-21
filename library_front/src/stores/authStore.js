@@ -1,50 +1,68 @@
+import { ref, computed, watch } from 'vue'
 import { defineStore } from 'pinia'
-import { http, setAuthToken } from '@/api/http'
+import api from '@/api/axios';
 
-const TOKEN_KEY = 'library_token_v1'
+export const useAuthStore = defineStore('counter', () => {
 
-export const useAuthStore = defineStore('auth', {
-  state: () => ({
-    token: localStorage.getItem(TOKEN_KEY) || '',
-    loginError: '',
-  }),
+  const accessToken = ref(null);
+  const refreshToken = ref(null);
+  const username = ref(null);
 
-  getters: {
-    isLoggedIn(state) {
-      return Boolean(state.token)
-    },
-  },
+  const signup = async function(obj){
+    try{
+      const response = await api.post('/accounts/signup/', {
+        username: obj.email,
+        password1: obj.pw,
+        password2: obj.check,
+      });
+    } catch(error){
+      console.log(error);
+      window.alert(error);
+    }
+  }
 
-  actions: {
-    init() {
-      setAuthToken(this.token)
-    },
+  const signout = async function(){
+    await api.delete('/accounts/signout/');
+  }
 
-    async login({ email, pw }) {
-      this.loginError = ''
+  const login = async function(obj){
+    try{
+      const response = await api.post('/accounts/token/', {
+        username: obj.email,
+        password: obj.pw,
+      });
 
-      const response = await http.post('/accounts/login', { email, pw })
-      const token = response?.data?.token || ''
+      accessToken.value = response.data.access;
+      refreshToken.value = response.data.refresh;
+      username.value = obj.id;
 
-      if (!token) {
-        this.token = ''
-        localStorage.removeItem(TOKEN_KEY)
-        setAuthToken('')
-        this.loginError = '아이디/비밀번호가 올바르지 않습니다.'
-        return false
-      }
+      localStorage.setItem('refresh', refreshToken.value);
+      api.defaults.headers.common.Authorization = `Bearer ${accessToken.value}`
 
-      this.token = token
-      localStorage.setItem(TOKEN_KEY, token)
-      setAuthToken(token)
-      return true
-    },
+    } catch(error){
+      console.log(error);
+      window.alert(error);
+    }
+  }
 
-    logout() {
-      this.token = ''
-      this.loginError = ''
-      localStorage.removeItem(TOKEN_KEY)
-      setAuthToken('')
-    },
-  },
-})
+  const logout = async function(){
+    // Token Logout
+    // try{
+    //   const response = await axios.post(`${BASE_URL}/accounts/logout/`);
+    //   token.value = null;
+    //   username.value = null;
+    // } catch(error){
+    //   console.log(error);
+    //   window.alert(error);
+    // }
+
+    accessToken.value = null;
+    refreshToken.value = null;
+    username.value = null;
+
+    localStorage.removeItem('refresh');
+    delete api.defaults.headers.common.Authorization;
+  }
+  
+  return { accessToken, refreshToken, username, signup, signout, login, logout }
+}, {persist: true})
