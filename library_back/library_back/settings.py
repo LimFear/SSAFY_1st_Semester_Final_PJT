@@ -34,7 +34,6 @@ INSTALLED_APPS = [
     'articles',
     'accounts',
     'rest_framework',
-    'rest_framework.authtoken',
     'dj_rest_auth',
     'django.contrib.sites',
     'allauth',
@@ -59,12 +58,19 @@ REST_FRAMEWORK = {
     ),
 }
 
+REST_AUTH = {
+    'USE_JWT': True,
+    'TOKEN_MODEL': None,
+}
+
 SIMPLE_JWT = {
+    "AUTH_HEADER_TYPES": ("Bearer",),
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': False,
 }
+
 
 # Token Auth
 # REST_FRAMEWORK = {
