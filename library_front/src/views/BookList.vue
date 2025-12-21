@@ -14,7 +14,6 @@ const query = ref('')
 
 onMounted(async () => {
   await booksStore.fetchBooks()
-
 })
 
 const filteredBooks = computed(() => {
@@ -58,7 +57,6 @@ function toggleFavorite(bookId) {
 
         <div class="body">
           <div class="title">{{ book.title }}</div>
-          <div style="font-size:12px; color:#888;">{{ book.cover }}</div>
           <div class="author">{{ book.author }}</div>
 
           <div class="actions">

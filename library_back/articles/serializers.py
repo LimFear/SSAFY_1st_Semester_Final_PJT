@@ -4,7 +4,7 @@ from .models import Book, Category, Comment
 class BookSerializer(serializers.ModelSerializer):
     class Meta:
         model = Book
-        fields = ('title', 'author')
+        fields = ('title', 'author', 'cover', 'id')
 
 class BookDetailSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)

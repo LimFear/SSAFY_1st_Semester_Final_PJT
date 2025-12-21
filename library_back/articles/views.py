@@ -29,7 +29,9 @@ def books_detail(request, book_pk):
 @api_view(['GET', 'POST'])
 def comments(request, book_pk):
     if (request.method == 'GET'):
-        comment_list = get_list_or_404(Comment, book_id=book_pk)
+        # comment_list = get_list_or_404(Comment, book_id=book_pk)
+        # 댓글이 없어도 404 말고 빈 리스트 반환
+        comment_list = Comment.objects.filter(book_id=book_pk).order_by('-id')
         serializer = CommentSerializer(comment_list, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
