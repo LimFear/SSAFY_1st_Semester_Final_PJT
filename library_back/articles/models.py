@@ -38,3 +38,22 @@ class Comment(models.Model):
     book = models.ForeignKey(Book, on_delete=models.CASCADE)
     content = models.CharField(max_length=100)
     created_at = models.DateField(auto_now_add=True)
+
+class Favorite(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    book = models.ForeignKey(Book, on_delete=models.CASCADE)
+    count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        unique_together = ('user', 'book',)
+    
+    def __str__(self):
+        return f'{self.user.username} - {self.book.title}'
+    
+    def increment(self):
+        self.count += 1
+        self.save()
+
+    def decrement(self):
+        self.count += 1
+        self.save()

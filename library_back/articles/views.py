@@ -1,13 +1,15 @@
 from django.shortcuts import get_list_or_404, get_object_or_404
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.exceptions import NotFound
 
 from django.contrib.auth import get_user_model
-from .models import Book, Comment
+from .models import Book, Comment, Favorite
 
 from .serializers import BookSerializer, BookDetailSerializer
-from .serializers import CommentSerializer
+from .serializers import CommentSerializer, FavoriteBookSerializer
 
 # Create your views here.
 
@@ -54,3 +56,12 @@ def delete_comment(request, comment_pk):
         # if (comment.user == request.user):
         comment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+@api_view(['GET'])
+def favorite(request, user_pk):
+    if (request.method == 'GET'):
+        favorites = Favorite.objects.filter(pk=user_pk)
+        if not favorites:
+            raise NotFound(detail="No favorite books found for this user.")
+        serializer = FavoriteBookSerializer(favorites, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

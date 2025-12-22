@@ -1,6 +1,7 @@
 import axios from 'axios'
 import router from '@/router'
 
+
 // Instance..........
 const api = axios.create({
   baseURL: '/api/v1',
