@@ -42,28 +42,6 @@ DRF + Vue (SPA)
 
 - vue 추가
 
-<<<<<<< HEAD
-12.19-02P **구현 완료**
-
-- DRF basecode 추가, 각 Model 정의 (Article, Book, Category, Comment)
-
-  # 12.19-03P **수정 완료**
-
-  12.19-01P **구현 완료**
-
-- DRF basecode 추가, 각 Model 정의 (Article, Book, Category, Comment)
-
-  12.19-02P **수정 완료**
-
-> > > > > > > 1812006 (Modified navbar)
-
-- Article Model 임시삭제완료
-- 구현 방향 : 여러개의 책리스트를 표현, 각 아이템을 클릭하면 도서의 상세페이지로 이동하면서 사용자가 댓글을 남길 수 있는 기능으로 변경
-- url구성과 view함수 구성 완료
-
-<<<<<<< HEAD
-12.19-04P **구현 완료**
-=======
 12.19-03P **구현 완료**
 
 > > > > > > > 1812006 (Modified navbar)

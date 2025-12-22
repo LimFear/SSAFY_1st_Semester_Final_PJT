@@ -25,8 +25,10 @@ class Book(models.Model):
         related_name='recommended_by',
         blank=True
     )
+    
+    views = models.PositiveIntegerField(default=0)          # TOP5 추리기 위한 조회수 검색 변수
 
-# class Article(models.Model):
+# class Article(models.Model):  
 #     book = models.ForeignKey(Book, on_delete=models.CASCADE)
 #     title = models.CharField(max_length=50)
 #     content = models.TextField(max_length=500)
