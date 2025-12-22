@@ -51,12 +51,12 @@ def comments(request, book_pk):
 @api_view(['DELETE'])
 def delete_comment(request, comment_pk):
     if not request.user.is_authenticated:
-        return Response({"detail": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
 
     comment = get_object_or_404(Comment, pk=comment_pk)
 
-    if comment.user.id != request.user.id:
-        return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
+    if comment.user_id != request.user.id:
+        return Response(status=status.HTTP_403_FORBIDDEN)
 
     comment.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
