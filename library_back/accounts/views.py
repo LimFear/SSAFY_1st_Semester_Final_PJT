@@ -99,6 +99,14 @@ class CookieTokenObtainPairView(TokenObtainPairView):
         return response
     
 class CookieTokenRefreshView(TokenRefreshView):
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        user = self.user
+        data['user_id'] = user.pk
+        data['username'] = user.username
+        return data
+
     def post(self, request, *args, **kwargs):
         refresh = request.COOKIES.get('refresh_token')
 
