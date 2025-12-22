@@ -1,22 +1,22 @@
 <script setup>
-import { useAuthStore } from '@/stores/authStore'
-import { onMounted, computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { useAuthStore } from "@/stores/authStore";
+import { onMounted, computed } from "vue";
+import { useRouter } from "vue-router";
 
 const authStore = useAuthStore();
 const router = useRouter();
 
-const userlogout = async function() {
+const userlogout = async function () {
   authStore.logout();
-  await router.push('/');
-  console.log('logout OK!');
-}
+  await router.push("/");
+  console.log("logout OK!");
+};
 
-const usersignout = async function() {
+const usersignout = async function () {
   await authStore.signout();
-  await router.push('/');
-  console.log('signout OK!');
-}
+  await router.push("/");
+  console.log("signout OK!");
+};
 </script>
 
 <template>
@@ -26,11 +26,29 @@ const usersignout = async function() {
     <nav class="menu">
       <RouterLink class="link" to="/">Main</RouterLink>
       <RouterLink class="link" to="/list">List</RouterLink>
-      <RouterLink v-if="!authStore.isLogined" class="link" to="/login">Login</RouterLink>
-      <RouterLink v-if="!authStore.isLogined" class="link" to="/signup">Signup</RouterLink>
+      <RouterLink v-if="!authStore.isLogined" class="link" to="/login"
+        >Login</RouterLink
+      >
+      <RouterLink v-if="!authStore.isLogined" class="link" to="/signup"
+        >Signup</RouterLink
+      >
 
-      <button v-if="authStore.isLogined" @click="userlogout()">Logout</button>
-      <button v-if="authStore.isLogined" @click="usersignout()">Signout</button>
+      <button
+        v-if="authStore.isLogined"
+        class="navLinkBtn"
+        type="button"
+        @click="userlogout()"
+      >
+        Logout
+      </button>
+      <button
+        v-if="authStore.isLogined"
+        class="navLinkBtn"
+        type="button"
+        @click="usersignout()"
+      >
+        Signout
+      </button>
     </nav>
   </header>
 
@@ -90,5 +108,23 @@ const usersignout = async function() {
 
 .page {
   padding: 16px;
+}
+
+.navLinkBtn {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+
+  opacity: 0.85;
+  cursor: pointer;
+}
+
+.navLinkBtn:hover {
+  opacity: 1;
 }
 </style>
