@@ -55,5 +55,5 @@ class Favorite(models.Model):
         self.save()
 
     def decrement(self):
-        self.count += 1
+        self.count -= 1
         self.save()

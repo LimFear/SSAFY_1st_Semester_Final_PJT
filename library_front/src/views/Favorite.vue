@@ -15,19 +15,33 @@ const favoriteStore2 = useFavoritesStore2()
 const query = ref('')
 
 onMounted(async () => {
-  await booksStore.fetchBooks()
+  await favoriteStore2.getFavorite()
 })
 
 const filteredBooks = computed(() => {
   const q = query.value.trim().toLowerCase()
-  if (!q) return booksStore.books
+  
+  // 즐겨찾기 목록에 포함된 책만 필터링하려면
+  const isFavorite = (bookId) => {
+    return favoriteStore2.favoriteList.some(favorite => favorite.id === bookId);
+  }
 
+  // 검색어가 없으면, 즐겨찾기 목록에 포함된 책만 필터링
+  if (!q) {
+    return booksStore.books.filter(book => isFavorite(book.id));
+  }
+
+  // 검색어가 있을 때, 즐겨찾기 목록에 포함되었는지 여부도 함께 체크
   return booksStore.books.filter((book) => {
-    const title = String(book.title ?? '').toLowerCase()
-    const author = String(book.author ?? '').toLowerCase()
-    return title.includes(q) || author.includes(q)
-  })
-})
+    const title = String(book.title ?? '').toLowerCase();
+    const author = String(book.author ?? '').toLowerCase();
+    const isBookFavorite = isFavorite(book.id);
+
+    // 책 제목이나 저자에 검색어가 포함되거나 즐겨찾기 목록에 포함된 책만 반환
+    return (title.includes(q) || author.includes(q)) && isBookFavorite;
+  });
+});
+
 
 function goDetail(bookId) {
   router.push({ name: 'article', params: { id: bookId } })
