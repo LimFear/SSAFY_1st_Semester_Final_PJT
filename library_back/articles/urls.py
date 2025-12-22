@@ -7,5 +7,5 @@ urlpatterns = [
     path('books/<int:book_pk>/', views.books_detail),
     path('books/<int:book_pk>/comments/', views.comments),
     path('comments/<int:comment_pk>/', views.delete_comment),
-    path('favorites/<int:user_pk>', views.favorite),
+    path('favorites/', views.favorite),
 ]

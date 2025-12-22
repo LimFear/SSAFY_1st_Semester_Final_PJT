@@ -32,6 +32,9 @@ const usersignout = async function () {
       <RouterLink v-if="!authStore.isLogined" class="link" to="/signup"
         >Signup</RouterLink
       >
+      <RouterLink v-if="authStore.isLogined" class="link" to="/favorite"
+        >Favorite</RouterLink
+      >
 
       <button
         v-if="authStore.isLogined"

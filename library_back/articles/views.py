@@ -74,6 +74,24 @@ def delete_comment(request, comment_pk):
     comment.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
 
-@api_view(['GET'])
-def favorite(request, user_pk):
-    pass
+@api_view(['GET', 'POST'])
+def favorite(request):
+    user = request.user
+    if (request.method == 'GET'):
+        favorite_books = Favorite.objects.filter(user=user)
+        books = [favorite.book for favorite in favorite_books]
+        serializer = BookSerializer(books, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    elif (request.method == 'POST'):
+        book_pk = request.data.get('book_pk')
+        book = get_object_or_404(Book, pk=book_pk)
+
+        favorite = Favorite.objects.filter(user=user, book=book)
+
+        if (favorite.exists()):
+            favorite.delete()
+            return Response({"detail": "Book removed from favorites."}, status=status.HTTP_204_NO_CONTENT)
+        else:
+            Favorite.objects.create(user=user, book=book)
+            return Response({"detail": "Book added to favorites."}, status=status.HTTP_201_CREATED)

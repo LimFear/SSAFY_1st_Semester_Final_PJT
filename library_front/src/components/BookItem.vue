@@ -91,8 +91,10 @@ async function submitComment() {
   }
 }
 
-const deleteComment = async function (obj) {
+const deleteComment = async function(obj){
+  
   const commentPK = obj.comment_pk;
+
   try {
     const headers = {
       Authorization: `Bearer ${authStore.accessToken}`,
@@ -113,7 +115,7 @@ const deleteComment = async function (obj) {
       router.push({ name: "Login", query: { redirect: route.fullPath } });
       return;
     }
-    createError.value = "댓글 작성에 실패했습니다.";
+    createError.value = "댓글 삭제에 실패했습니다.";
   } finally {
     createLoading.value = false;
   }
