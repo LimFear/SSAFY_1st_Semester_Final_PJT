@@ -38,13 +38,14 @@ def comments(request, book_pk):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     # POST
-    if not request.user.is_authenticated:
-        return Response({"detail": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
+    elif (request.method == 'POST'):
+        if not request.user.is_authenticated:
+            return Response({"detail": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
 
-    serializer = CommentSerializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
-    serializer.save(book_id=book_pk, user=request.user)
-    return Response(serializer.data, status=status.HTTP_201_CREATED)
+        serializer = CommentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(book_id=book_pk, user=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 @api_view(['DELETE'])
@@ -54,8 +55,12 @@ def delete_comment(request, comment_pk):
 
     comment = get_object_or_404(Comment, pk=comment_pk)
 
-    if comment.user_id != request.user.id:
+    if comment.user.id != request.user.id:
         return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
 
     comment.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['GET'])
+def favorite(request, user_pk):
+    pass

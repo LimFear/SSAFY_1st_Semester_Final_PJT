@@ -1,14 +1,22 @@
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from rest_framework import serializers
+from django.conf import settings
 from articles.models import Category
 
-# class CustomRegisterSerializer(RegisterSerializer):
-#     category = serializers.ModelMultipleChoiceField(
-#         queryset=Category.objects.all(), 
-#         required=True
-#     )
+class CustomUserSerializer(serializers.ModelSerializer):
+    categories = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), many=True)
 
-#     def get_cleaned_data(self):
-#         data = super().get_cleaned_data()
-#         data['category'] = self.validated_data.get('category')
-#         return data
+    def get_cleaned_data(self):
+        data = super().get_cleaned_data()
+        data['categories'] = self.validated_data.get('categories')
+        return data
+    
+    def save(self, request):
+        user = super.save(request)
+        user.categories = self.validated_data.get('categories')
+        user.save()
+        return user
+
+    # class Meta:
+    #     model = settings.AUTH_USER_MODEL
+    #     fields = ['id', 'username', 'email', 'categories']

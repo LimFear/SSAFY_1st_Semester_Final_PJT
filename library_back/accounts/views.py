@@ -55,6 +55,14 @@ def logout(request):
     return response
 
 class CookieTokenObtainPairView(TokenObtainPairView):
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        user = self.user
+        data['user_id'] = user.pk
+        data['username'] = user.username
+        return data
+
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
 
