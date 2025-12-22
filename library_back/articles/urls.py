@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path('books/popular/', views.popular_books),            # TOP 5 
     path('books/', views.books),
     path('books/<int:book_pk>/', views.books_detail),
     path('books/<int:book_pk>/comments/', views.comments),

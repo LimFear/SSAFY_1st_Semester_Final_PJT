@@ -1,3 +1,4 @@
+from django.db.models import Count, F
 from django.shortcuts import get_list_or_404, get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -10,6 +11,7 @@ from .models import Book, Comment, Favorite
 
 from .serializers import BookSerializer, BookDetailSerializer
 from .serializers import CommentSerializer, FavoriteBookSerializer
+from .serializers import PopularBookSerializer
 
 # Create your views here.
 
@@ -23,10 +25,21 @@ def books(request):
 @api_view(['GET'])
 def books_detail(request, book_pk):
     if (request.method == 'GET'):
+        Book.objects.filter(pk=book_pk).update(views=F('views') + 1)  # 조회수 + 1
         book = get_object_or_404(Book, pk=book_pk)
         serializer = BookDetailSerializer(book)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+@api_view(['GET'])                      # TOP 5
+def popular_books(request):
+    book_queryset = (
+        Book.objects
+        .annotate(comment_count=Count('comment'))   # Comment FK 역참조
+        .annotate(score=F('views') + F('comment_count'))
+        .order_by('-score', '-views', '-comment_count', '-id')[:5]
+    )
+    serializer = PopularBookSerializer(book_queryset, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET', 'POST'])
 def comments(request, book_pk):
