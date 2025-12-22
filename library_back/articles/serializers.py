@@ -14,7 +14,9 @@ class BookDetailSerializer(serializers.ModelSerializer):
         read_only_fields = ('category',)
 
 class CommentSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+
     class Meta:
-        model = Comment
+        model = Comment        
         fields = '__all__'
         read_only_fields = ('book', 'user',)

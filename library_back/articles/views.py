@@ -34,23 +34,26 @@ def comments(request, book_pk):
         comment_list = Comment.objects.filter(book_id=book_pk).order_by('-id')
         serializer = CommentSerializer(comment_list, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
-    elif (request.method == 'POST'):
 
-        if (request.user.is_authenticated):
-            user = request.user
-        else :
-            User = get_user_model()
-            user, created = User.objects.get_or_create(username='guest')
-        serializer = CommentSerializer(data=request.data)
-        if (serializer.is_valid(raise_exception=True)):
-            serializer.save(book_id=book_pk, user=user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+    # POST
+    if not request.user.is_authenticated:
+        return Response({"detail": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
+
+    serializer = CommentSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    serializer.save(book_id=book_pk, user=request.user)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
 @api_view(['DELETE'])
 def delete_comment(request, comment_pk):
-    if (request.method == 'DELETE'):
-        comment = get_object_or_404(Comment, pk=comment_pk)
-        # if (comment.user == request.user):
-        comment.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    if not request.user.is_authenticated:
+        return Response({"detail": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
+
+    comment = get_object_or_404(Comment, pk=comment_pk)
+
+    if comment.user_id != request.user.id:
+        return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
+
+    comment.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
