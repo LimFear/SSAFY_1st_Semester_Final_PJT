@@ -61,7 +61,7 @@ REST_FRAMEWORK = {
 REST_AUTH = {
     'USE_JWT': True,
     'TOKEN_MODEL': None,
-    # 'REGISTER_SERIALIZER': 'accounts.serializers.CustomRegisterSerializer',
+    'REGISTER_SERIALIZER': 'accounts.serializers.CustomUserSerializer',
 }
 
 SIMPLE_JWT = {

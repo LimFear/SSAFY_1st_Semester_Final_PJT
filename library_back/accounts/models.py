@@ -4,5 +4,7 @@ from articles.models import Category
 
 # Create your models here.
 class User(AbstractUser):
-    # category = models.ForeignKey(Category, on_delete=models.CASCADE)
-    pass
+    categories = models.ManyToManyField(Category)
+    
+    def __str__(self):
+        return self.username

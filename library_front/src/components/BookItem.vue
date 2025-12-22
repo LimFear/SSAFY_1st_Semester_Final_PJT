@@ -6,6 +6,8 @@ import { useBooksStore } from "@/stores/booksStore";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import { useAuthStore } from "@/stores/authStore";
 
+import { jwtDecode } from "jwt-decode";
+
 const route = useRoute();
 const router = useRouter();
 
@@ -16,6 +18,11 @@ const authStore = useAuthStore();
 const bookId = computed(() => String(route.params.id));
 
 /* ---------------- 댓글 상태 ---------------- */
+
+const Token = authStore.accessToken;
+const decoded = jwtDecode(Token);
+const tokenUserId = decoded.user_id;
+
 const comments = ref([]);
 const commentsLoading = ref(false);
 const commentsError = ref("");
@@ -72,6 +79,34 @@ async function submitComment() {
     // 작성 즉시 화면 반영
     comments.value.unshift(response.data);
     newComment.value = "";
+  } catch (error) {
+    // 토큰 만료/비로그인 처리 -> 로그인으로
+    if (error?.response?.status === 401) {
+      router.push({ name: "Login", query: { redirect: route.fullPath } });
+      return;
+    }
+    createError.value = "댓글 작성에 실패했습니다.";
+  } finally {
+    createLoading.value = false;
+  }
+}
+
+const deleteComment = async function(obj){
+  const commentPK = obj.comment_pk;
+  try {
+    const headers = {
+      Authorization: `Bearer ${authStore.accessToken}`,
+    };
+    const response = await api.delete(
+      `/articles/comments/${commentPK}/`,
+      { headers }
+    );
+
+    const updatedCommentsResponse = await api.get(`/articles/books/${bookId.value}/comments/`);
+    console.log(updatedCommentsResponse);
+    comments.value = updatedCommentsResponse.data;
+    newComment.value = "";
+
   } catch (error) {
     // 토큰 만료/비로그인 처리 -> 로그인으로
     if (error?.response?.status === 401) {
@@ -180,6 +215,7 @@ function goDetail(nextId) {
 
       <!-- ✅ 댓글 섹션 -->
       <section class="comments">
+        <h1>{{ comments }}</h1>
         <h3>댓글 ({{ comments.length }})</h3>
 
         <p v-if="commentsError" class="error">{{ commentsError }}</p>
@@ -217,6 +253,8 @@ function goDetail(nextId) {
               >
             </div>
             <div class="commentContent">{{ c.content }}</div>
+            <!-- =------------------------------------------------------ -->
+            <button v-if="c.user == tokenUserId" v-on:click="deleteComment({user_pk:tokenUserId, comment_pk:c.id})">삭제</button>
           </li>
         </ul>
       </section>
