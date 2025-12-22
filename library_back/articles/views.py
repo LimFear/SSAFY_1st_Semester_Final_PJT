@@ -7,11 +7,12 @@ from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
 
 from django.contrib.auth import get_user_model
-from .models import Book, Comment, Favorite
+from .models import Book, Comment, Favorite, Category
 
 from .serializers import BookSerializer, BookDetailSerializer
 from .serializers import CommentSerializer, FavoriteBookSerializer
 from .serializers import PopularBookSerializer
+from .serializers import CategoryListSerializer
 
 # Create your views here.
 
@@ -95,3 +96,11 @@ def favorite(request):
         else:
             Favorite.objects.create(user=user, book=book)
             return Response({"detail": "Book added to favorites."}, status=status.HTTP_201_CREATED)
+        
+
+@api_view(['GET'])
+def categories(request):
+    if (request.method == 'GET'):
+        category_list = get_list_or_404(Category)
+        serializer = CategoryListSerializer(category_list, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

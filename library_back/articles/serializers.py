@@ -37,3 +37,8 @@ class PopularBookSerializer(serializers.ModelSerializer):
     class Meta:
         model = Book
         fields = ('comment_count', 'score', 'cover', 'views')
+
+class CategoryListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'
