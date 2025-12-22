@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Book, Category, Comment
+from .models import Book, Category, Comment, Favorite
 
 class BookSerializer(serializers.ModelSerializer):
     class Meta:
@@ -20,3 +20,11 @@ class CommentSerializer(serializers.ModelSerializer):
         model = Comment        
         fields = '__all__'
         read_only_fields = ('book', 'user',)
+
+class FavoriteBookSerializer(serializers.ModelSerializer):
+    book_title = serializers.CharField(source='book.title', read_only=True)
+    count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Favorite
+        fields = ('book_title', 'count')
