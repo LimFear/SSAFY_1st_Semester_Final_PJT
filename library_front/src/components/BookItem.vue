@@ -3,16 +3,15 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import api from "@/api/axios";
 import { useBooksStore } from "@/stores/booksStore";
-import { useFavoritesStore } from "@/stores/favoritesStore";
 import { useAuthStore } from "@/stores/authStore";
-
+import { useFavoritesStore2 } from "@/stores/favoriteStorev2";
 import { jwtDecode } from "jwt-decode";
 
 const route = useRoute();
 const router = useRouter();
 
 const booksStore = useBooksStore();
-const favoritesStore = useFavoritesStore();
+const favoritesStore2 = useFavoritesStore2();
 const authStore = useAuthStore();
 
 const bookId = computed(() => String(route.params.id));
@@ -142,13 +141,13 @@ const recommendedBooks = computed(() => {
   return booksStore.books.filter((b) => idSet.has(String(b.id)));
 });
 
-function toggleFavorite() {
+function toggleFavorite(bookId) {
   // ✅ authStore는 isLogined 입니다
   if (!authStore.isLogined) {
     router.push({ name: "Login", query: { redirect: route.fullPath } });
     return;
   }
-  favoritesStore.toggle(bookId.value);
+  favoritesStore2.toggle(bookId);
 }
 
 function goDetail(nextId) {
@@ -176,12 +175,8 @@ function goDetail(nextId) {
           <p class="sub">출판사: {{ booksStore.selectedBook.publisher }}</p>
           <p class="sub">출간일: {{ booksStore.selectedBook.pubDate }}</p>
 
-          <button class="btn" @click="toggleFavorite()">
-            {{
-              favoritesStore.isFavorite(bookId)
-                ? "즐겨찾기 해제"
-                : "즐겨찾기 추가"
-            }}
+          <button class="btn" @click="toggleFavorite(bookId)">
+            {{ favoritesStore2.isFavorite(bookId) ? "즐겨찾기 해제" : "즐겨찾기 추가" }}
           </button>
         </div>
       </div>
