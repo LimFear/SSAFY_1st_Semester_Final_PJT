@@ -7,6 +7,7 @@ class Category(models.Model):
     name = models.CharField(max_length=50, unique=True)
 
 class Book(models.Model):
+    views = models.PositiveIntegerField(default=0)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='books')
     title = models.CharField(max_length=200)
     description = models.TextField()
