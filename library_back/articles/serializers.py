@@ -33,3 +33,15 @@ class CategoryListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = '__all__'
+
+        from rest_framework import serializers
+from .models import Book
+
+class PopularBookSerializer(serializers.ModelSerializer):           # TOP 5 구현
+    comment_count = serializers.IntegerField(read_only=True)
+    score = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Book
+        # ✅ 프론트에서 상세 이동하려면 id가 반드시 필요
+        fields = ("id", "title", "author", "cover", "views", "comment_count", "score")
