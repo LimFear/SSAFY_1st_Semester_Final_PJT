@@ -1,4 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/authStore'
+import { useRouter } from 'vue-router'
 
 import Main from '@/views/Main.vue'
 import BookList from '@/views/BookList.vue'
@@ -17,6 +19,16 @@ const router = createRouter({
     { path: '/signup', name: 'signup', component: Signup },
     { path: '/favorite', name: 'favorite', component: favorite}
   ],
+})
+
+router.beforeEach((to)=>{
+  const store = useAuthStore();
+  const route = useRouter();
+
+  if (!store.isLogined && to.name === 'list'){
+    window.alert('로그인 하라!');
+    route.push({name: 'login'})
+  }
 })
 
 export default router

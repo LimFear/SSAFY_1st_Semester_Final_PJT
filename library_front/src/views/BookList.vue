@@ -2,13 +2,11 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBooksStore } from '@/stores/booksStore'
-import { useFavoritesStore } from '@/stores/favoritesStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useFavoritesStore2 } from '@/stores/favoriteStorev2'
 
 const router = useRouter()
 const booksStore = useBooksStore()
-const favoritesStore = useFavoritesStore()
 const authStore = useAuthStore()
 const favoriteStore2 = useFavoritesStore2()
 
@@ -42,7 +40,6 @@ function toggleFavorite(bookId) {
   else {
     favoriteStore2.toggle(bookId);
   }
-  // favoritesStore.toggle(bookId)
 }
 </script>
 
@@ -68,7 +65,7 @@ function toggleFavorite(bookId) {
           <div class="actions">
             <button class="btn" @click="goDetail(book.id)">더보기</button>
             <button class="btn" @click="toggleFavorite(book.id)">
-              {{ favoritesStore.isFavorite(book.id) ? '★' : '☆' }}
+              {{ favoriteStore2.isFavorite(book.id) ? '★' : '☆' }}
             </button>
           </div>
         </div>

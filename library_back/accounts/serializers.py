@@ -16,7 +16,8 @@ class CustomUserSerializer(RegisterSerializer):
         categories_data = self.validated_data.get('categories')
         if categories_data:
             user.categories.set(categories_data)
+        return user
 
     class Meta:
         model = settings.AUTH_USER_MODEL
-        fields = ['id', 'username', 'email', 'categories']
+        fields = ['id', 'username', 'categories']
