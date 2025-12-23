@@ -14,6 +14,7 @@ export const useAuthStore = defineStore('auth', () => {
         username: obj.email,
         password1: obj.pw,
         password2: obj.check,
+        categories: obj.categories,
       })
 
     } catch(error){
