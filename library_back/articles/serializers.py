@@ -21,7 +21,7 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('book', 'user',)
 
-class FavoriteBookSerializer(serializers.ModelSerializer):      # TOP 5 전용
+class FavoriteBookSerializer(serializers.ModelSerializer):
     book_title = serializers.CharField(source='book.title', read_only=True)
     count = serializers.IntegerField(read_only=True)
 
@@ -29,11 +29,7 @@ class FavoriteBookSerializer(serializers.ModelSerializer):      # TOP 5 전용
         model = Favorite
         fields = ('book_title', 'count')
 
-
-class PopularBookSerializer(serializers.ModelSerializer):
-    comment_count = serializers.IntegerField(read_only=True)
-    score = serializers.IntegerField(read_only=True)
-
+class CategoryListSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Book
-        fields = ('comment_count', 'score', 'cover', 'views')
+        model = Category
+        fields = '__all__'
