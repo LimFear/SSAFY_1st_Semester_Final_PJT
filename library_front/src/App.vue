@@ -2,6 +2,7 @@
 import { useAuthStore } from "@/stores/authStore";
 import { onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
+import Chatbot from "./components/Chatbot.vue";
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -58,6 +59,8 @@ const usersignout = async function () {
   <main class="page">
     <RouterView />
   </main>
+
+  <Chatbot />
 </template>
 
 <style scoped>

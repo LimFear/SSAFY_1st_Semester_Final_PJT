@@ -14,13 +14,14 @@ const showPassword = ref(false);
 
 const router = useRouter();
 
-const handleSubmit = function () {
+const handleSubmit = async function () {
 
   const obj = {
     email: username.value,
     pw: password.value
   }
-  store.login(obj);
+
+  await store.login(obj);
   if (store.isLogined){
     router.push({name: 'main'});
   }
