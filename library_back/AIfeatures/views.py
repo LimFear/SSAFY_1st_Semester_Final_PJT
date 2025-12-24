@@ -67,13 +67,7 @@ def recommends(request):
             # 내부 로직에 의해 자동으로 외부 검색(search_aladin_books)이 실행되도록 유도
             items_for_chain = search_DB_books([], user_input, llm)
 
-    # 찾아낸 것중에 0번이 가장 유사도가 높고, 이와 관련된 이름을 추출한다 (DB의 name과 같음!)
-
-    # 2. DB안에서 책을 찾는 함수 호출
-    # books_data = search_DB_books(found_docs, user_query, llm)
-    # print(books_data)
-
-    # 3. Chaining!
+    # Chaining!
     # LangChain에서는 정확한 수행을 위해서 페르소나와 행동을 지정하라고 하던데...
 
     template = """
@@ -111,55 +105,8 @@ def recommends(request):
     serializer = RecommendationSerializer(data={'answer': ai_answer})
     if (serializer.is_valid(raise_exception=True)):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
-# 유사도를 측정하지 않는 코드 ... : 관련이 없는 책이라도 추천해 주는 것이 문제가 된다.
-# def recommends(request):
 
-#     if (request.method == 'POST'):
-
-#         user_input = request.data.get('question') # 입력 데이터
-
-#         if not user_input:
-#             return Response({'error': '값이 없어요!'}, status=status.HTTP_400_BAD_REQUEST)
-
-#         # 1. AI는 관련된 카테고리를 골라야 한다.
-#         # retriever를 통해서 user_input과 관련된 문서를 가져온다.
-#         found_docs = retriever.invoke(user_input)
-#         # 찾아낸 것중에 0번이 가장 유사도가 높고, 이와 관련된 이름을 추출한다 (DB의 name과 같음!)
-#         category_name = found_docs[0].page_content
-
-#         # 2. DB안에서 책을 찾는 함수 호출
-#         books_data = search_DB_books(found_docs, user_input, llm)
-#         print(books_data)
-
-#         # 3. Chaining!
-#         # LangChain에서는 정확한 수행을 위해서 페르소나와 행동을 지정하라고 하던데...
-
-#         template = """
-#         당신은 최고의 도서 추천 전문가입니다. 
-#         다음은 알라딘에서 가져온 '{category_name}' 카테고리의 추천 도서 목록입니다.
-
-#         목록: {book_json}
-
-#         사용자의 요청({user_query})에 부합하는 책을 선정하여 친절하게 추천해 주세요.
-#         책의 제목, 저자, 간단한 특징을 포함해야 합니다. 링크는 포함하지 말아주세요.
-
-#         3개 까지 추천해 주셨으면 좋겠어요.
-#         """
-#         prompt = ChatPromptTemplate.from_template(template)
-
-#         chain = prompt | llm | StrOutputParser()
-#         ai_answer = chain.invoke({
-#             "category_name": category_name, # 입력의 유사도를 비교하여 가장 비슷한 카테고리 반환
-#             "book_json": books_data, # 카테고리 이름을 넣으면 Aladin API에서 검색, item을 받는다. (포장된)
-#             "user_query": user_input # 유저의 입력
-#         })
-
-#         serializer = RecommendationSerializer(data={'answer': ai_answer})
-
-#         if (serializer.is_valid(raise_exception=True)):
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
+# 1순위는 받은 배열에 따라 분기를 나누느 함수이다.
 def search_DB_books(category_docs, user_query, llm):
     if not category_docs:
         print("이건 검색결과입니다!")
@@ -190,8 +137,6 @@ def search_DB_books(category_docs, user_query, llm):
     if rows:
         rprint(f"DB에서 {len(rows)}권의 책을 찾았습니다.")
         for row in rows:
-            # [주의] DB 테이블 컬럼 순서에 맞춰 인덱스를 수정해야 합니다.
-            # 예: 0:id, 1:category_id, 2:title, 3:author, 4:description ... 라고 가정
             book_info = {
                 "title": row[1],       # 제목 컬럼 순서
                 "author": row[7],      # 저자 컬럼 순서
@@ -204,7 +149,9 @@ def search_DB_books(category_docs, user_query, llm):
         items = selected_items # 배열의 형태로 받았다.
         rprint('items에 값이 있습니다!')
 
-        # 실행해보니 1을 제외하고는 추천을 안해주던데요? => 검색하자
+        # 카테고리는 있어도, Books Table에는 매칭되지 않는 Category가 있을 수 있다.
+        # 이 경우에도 검색 수행!
+
         if not items:
             print("이건 검색결과입니다!")
             # 2순위인 검색 API를 불러오기로 했다.
@@ -231,6 +178,7 @@ def search_aladin_books(user_query):
     print(response)
     return response.json().get('item', [])
 
+# 3순위 실행 : 키워드를 뽑아내는 또 다른 체이닝!
 def get_search_keyword(user_input, llm):
 
     template = """
