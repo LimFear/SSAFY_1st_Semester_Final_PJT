@@ -1,183 +1,273 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import api from "@/api/axios";
+import { useAuthStore } from "@/stores/authStore";
 
 const router = useRouter();
+const authStore = useAuthStore();
 
-const popularBooks = ref([]);
-const isLoading = ref(false);
-const errorMessage = ref("");
+const isLoggedIn = computed(() => authStore.isLogined === true);
 
-const activeIndex = ref(0); // 현재 "가운데(2번째 자리)"에 오는 책의 인덱스
-const isPaused = ref(false);
-
-const rotationTimerId = ref(null);
-const rotationIntervalMs = 2200;
-
-function stopAutoRotate() {
-  if (rotationTimerId.value !== null) {
-    clearInterval(rotationTimerId.value);
-    rotationTimerId.value = null;
-  }
+/* =========================
+  공용: book 필드 안전 처리
+========================= */
+function getBookId(book) {
+  return book?.id ?? book?.pk ?? book?.book_id ?? book?.bookId ?? null;
 }
 
-function startAutoRotate() {
-  stopAutoRotate();
-
-  rotationTimerId.value = setInterval(() => {
-    const booksLength = popularBooks.value.length;
-    if (booksLength <= 1) {
-      return;
-    }
-
-    if (isPaused.value) {
-      return;
-    }
-
-    const nextIndex = activeIndex.value + 1;
-    if (nextIndex >= booksLength) {
-      activeIndex.value = 0;
-      return;
-    }
-
-    activeIndex.value = nextIndex;
-  }, rotationIntervalMs);
+function getCoverUrl(book) {
+  return (
+    book?.cover ??
+    book?.cover_img ??
+    book?.coverImage ??
+    book?.image ??
+    book?.thumbnail ??
+    ""
+  );
 }
 
-function pauseAutoRotate() {
-  isPaused.value = true;
+function getTitle(book) {
+  return book?.title ?? "(제목 없음)";
 }
 
-function resumeAutoRotate() {
-  isPaused.value = false;
+function getAuthor(book) {
+  return book?.author ?? "";
 }
 
-function focusBook(bookIndex) {
-  const booksLength = popularBooks.value.length;
-  if (booksLength <= 0) {
+function goArticle(book) {
+  const bookId = getBookId(book);
+  if (!bookId) {
+    window.alert("book id가 없습니다.");
     return;
   }
-
-  if (bookIndex === activeIndex.value) {
-    return;
-  }
-
-  activeIndex.value = bookIndex;
-}
-
-function getDelta(bookIndex) {
-  const booksLength = popularBooks.value.length;
-  if (booksLength <= 0) {
-    return 0;
-  }
-
-  let delta = (bookIndex - activeIndex.value) % booksLength;
-  if (delta < 0) {
-    delta += booksLength;
-  }
-  return delta;
-}
-
-/**
- * delta 기준:
- * 0 = 가운데(큰 카드)
- * 1 = 오른쪽(작은 카드)
- * length-1 = 왼쪽(작은 카드)
- * 나머지 = 숨김
- */
-function getCarouselStyle(bookIndex) {
-  const booksLength = popularBooks.value.length;
-
-  const styleObject = {
-    "--tx": "0px",
-    "--scale": "0.7",
-    "--op": "0",
-    "--ry": "0deg",
-    zIndex: 0,
-    pointerEvents: "none",
-  };
-
-  if (booksLength <= 0) {
-    return styleObject;
-  }
-
-  const delta = getDelta(bookIndex);
-
-  if (delta === 0) {
-    styleObject["--tx"] = "0px";
-    styleObject["--scale"] = "1.08";
-    styleObject["--op"] = "1";
-    styleObject["--ry"] = "0deg";
-    styleObject.zIndex = 30;
-    styleObject.pointerEvents = "auto";
-    return styleObject;
-  }
-
-  if (delta === 1) {
-    styleObject["--tx"] = "var(--shift)";
-    styleObject["--scale"] = "0.86";
-    styleObject["--op"] = "0.94";
-    styleObject["--ry"] = "-10deg";
-    styleObject.zIndex = 20;
-    styleObject.pointerEvents = "auto";
-    return styleObject;
-  }
-
-  if (delta === booksLength - 1) {
-    styleObject["--tx"] = "calc(var(--shift) * -1)";
-    styleObject["--scale"] = "0.86";
-    styleObject["--op"] = "0.94";
-    styleObject["--ry"] = "10deg";
-    styleObject.zIndex = 20;
-    styleObject.pointerEvents = "auto";
-    return styleObject;
-  }
-
-  return styleObject;
-}
-
-async function fetchPopularTop5() {
-  isLoading.value = true;
-  errorMessage.value = "";
-
-  try {
-    const response = await api.get("/articles/books/popular/");
-    const data = response.data;
-
-    const list = Array.isArray(data) ? data : data?.results ?? [];
-    popularBooks.value = list;
-
-    activeIndex.value = 0; // 처음에는 1등(0번 인덱스)이 가운데로
-    startAutoRotate();
-  } catch (error) {
-    popularBooks.value = [];
-    errorMessage.value = "인기 도서를 불러오지 못했습니다.";
-    stopAutoRotate();
-  } finally {
-    isLoading.value = false;
-  }
-}
-
-function goDetail(bookId) {
-  router.push({ name: "article", params: { id: bookId } });
+  router.push({ name: "article", params: { id: String(bookId) } });
 }
 
 function goList() {
-  router.push("/list");
+  router.push({ name: "list" });
 }
 
-onMounted(fetchPopularTop5);
+function goLogin() {
+  router.push({ name: "login" });
+}
 
-onBeforeUnmount(() => {
-  stopAutoRotate();
+/* =========================
+  공용 캐러셀 로직
+  - template에서 nested ref는 자동 언랩 안되므로 .value 필요
+========================= */
+function useCarousel(itemsRef, intervalMs = 3200) {
+  const activeIndex = ref(0);
+  const isPaused = ref(false);
+  const timerId = ref(null);
+
+  function stop() {
+    if (timerId.value !== null) {
+      clearInterval(timerId.value);
+      timerId.value = null;
+    }
+  }
+
+  function start() {
+    stop();
+    timerId.value = setInterval(() => {
+      const length = itemsRef.value.length;
+      if (length <= 1) return;
+      if (isPaused.value) return;
+
+      activeIndex.value = (activeIndex.value + 1) % length;
+    }, intervalMs);
+  }
+
+  function pause() {
+    isPaused.value = true;
+  }
+  function resume() {
+    isPaused.value = false;
+  }
+
+  function focus(index) {
+    const length = itemsRef.value.length;
+    if (length <= 0) return;
+    activeIndex.value = index;
+  }
+
+  function getDelta(index) {
+    const length = itemsRef.value.length;
+    if (length <= 0) return 0;
+
+    let delta = (index - activeIndex.value) % length;
+    if (delta < 0) delta += length;
+    return delta;
+  }
+
+  // 0=center, 1=right, length-1=left
+  function getStyle(index) {
+    const length = itemsRef.value.length;
+
+    const style = {
+      "--tx": "0px",
+      "--scale": "0.7",
+      "--op": "0",
+      "--ry": "0deg",
+      "--z": "0",
+      pointerEvents: "none",
+    };
+
+    if (length <= 0) return style;
+
+    const delta = getDelta(index);
+
+    if (delta === 0) {
+      style["--tx"] = "0px";
+      style["--scale"] = "1.08";
+      style["--op"] = "1";
+      style["--ry"] = "0deg";
+      style["--z"] = "30";
+      style.pointerEvents = "auto";
+      return style;
+    }
+
+    if (delta === 1) {
+      style["--tx"] = "var(--shift)";
+      style["--scale"] = "0.86";
+      style["--op"] = "0.94";
+      style["--ry"] = "-10deg";
+      style["--z"] = "20";
+      style.pointerEvents = "auto";
+      return style;
+    }
+
+    if (delta === length - 1) {
+      style["--tx"] = "calc(var(--shift) * -1)";
+      style["--scale"] = "0.86";
+      style["--op"] = "0.94";
+      style["--ry"] = "10deg";
+      style["--z"] = "20";
+      style.pointerEvents = "auto";
+      return style;
+    }
+
+    return style;
+  }
+
+  onBeforeUnmount(stop);
+
+  return { activeIndex, start, stop, pause, resume, focus, getStyle };
+}
+
+/* =========================
+  인기 TOP5
+========================= */
+const popularBooks = ref([]);
+const popularLoading = ref(false);
+const popularError = ref("");
+
+const popularCarousel = useCarousel(popularBooks, 3200);
+
+/* =========================
+  추천 TOP5
+========================= */
+const recommendedBooks = ref([]);
+const recommendedLoading = ref(false);
+const recommendedError = ref("");
+
+const recommendedCarousel = useCarousel(recommendedBooks, 3200);
+
+async function fetchPopularTop5() {
+  popularLoading.value = true;
+  popularError.value = "";
+
+  try {
+    // ✅ baseURL이 /api/v1이면 앞에 '/' 붙이지 마세요.
+    const response = await api.get("articles/books/popular/");
+    const data = response.data;
+    popularBooks.value = Array.isArray(data) ? data : data?.results ?? [];
+
+    popularCarousel.activeIndex.value = 0;
+    popularCarousel.start();
+  } catch (e) {
+    popularBooks.value = [];
+    popularError.value = "인기 도서를 불러오지 못했습니다.";
+    popularCarousel.stop();
+  } finally {
+    popularLoading.value = false;
+  }
+}
+
+function setRecommendedAsPopular() {
+  // 로그인 전(or 실패) fallback
+  recommendedBooks.value = [...popularBooks.value];
+  recommendedCarousel.activeIndex.value = 0;
+  recommendedCarousel.start();
+}
+
+async function fetchRecommendedTop5() {
+  recommendedLoading.value = true;
+  recommendedError.value = "";
+
+  try {
+    const response = await api.get("articles/books/recommended/");
+    const data = response.data;
+    const list = Array.isArray(data) ? data : data?.results ?? [];
+    recommendedBooks.value = list;
+
+    // 혹시 빈 리스트면 프론트에서도 fallback
+    if (recommendedBooks.value.length === 0) {
+      setRecommendedAsPopular();
+      return;
+    }
+
+    recommendedCarousel.activeIndex.value = 0;
+    recommendedCarousel.start();
+  } catch (e) {
+    // 401/서버에러 등: 인기 TOP5로 fallback
+    setRecommendedAsPopular();
+  } finally {
+    recommendedLoading.value = false;
+  }
+}
+
+/* 로그인 상태 변경 시 추천 갱신 */
+watch(
+  () => isLoggedIn.value,
+  async (logged) => {
+    if (!popularBooks.value.length) return;
+
+    if (logged) {
+      await fetchRecommendedTop5();
+    } else {
+      setRecommendedAsPopular();
+    }
+  }
+);
+
+/* 인기 TOP5 로드되면 로그인 전 추천은 인기 복제본으로 시작 */
+watch(
+  () => popularBooks.value,
+  (val) => {
+    if (!val || val.length === 0) return;
+    if (!isLoggedIn.value) setRecommendedAsPopular();
+  }
+);
+
+onMounted(async () => {
+  await fetchPopularTop5();
+  if (isLoggedIn.value) {
+    await fetchRecommendedTop5();
+  }
 });
 
-const hasBooks = computed(() => popularBooks.value.length > 0);
+/* 타이머 정리 */
+onBeforeUnmount(() => {
+  popularCarousel.stop();
+  recommendedCarousel.stop();
+});
 </script>
 
 <template>
   <main class="page">
+    <!-- HERO -->
     <section class="hero">
       <div class="heroLeft">
         <h1 class="heroTitle">Library</h1>
@@ -198,17 +288,23 @@ const hasBooks = computed(() => popularBooks.value.length > 0);
       </div>
     </section>
 
+    <!-- =========================
+      인기 TOP5
+    ========================= -->
     <section class="section">
       <div class="sectionHeader">
         <h2 class="sectionTitle">인기 도서 TOP5</h2>
-        <p class="sectionSub">인기 있는 도서를 확인하세요!</p>
+        <p class="sectionSub">인기있는 도서를 확인하세요!</p>
       </div>
 
-      <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+      <p v-if="popularError" class="error">{{ popularError }}</p>
 
-      <!-- 로딩: 3개 스켈레톤 -->
-      <div v-if="isLoading" class="carousel">
-        <div class="carouselStage">
+      <div
+        class="carousel"
+        @mouseenter="popularCarousel.pause"
+        @mouseleave="popularCarousel.resume"
+      >
+        <div v-if="popularLoading" class="carouselStage">
           <div
             class="carouselCard skeletonCard"
             style="
@@ -216,41 +312,36 @@ const hasBooks = computed(() => popularBooks.value.length > 0);
               --scale: 0.86;
               --op: 0.94;
               --ry: 10deg;
+              --z: 20;
             "
-          ></div>
+          />
           <div
             class="carouselCard skeletonCard"
-            style="--tx: 0px; --scale: 1.08; --op: 1; --ry: 0deg"
-          ></div>
+            style="--tx: 0px; --scale: 1.08; --op: 1; --ry: 0deg; --z: 30"
+          />
           <div
             class="carouselCard skeletonCard"
-            style="--tx: var(--shift); --scale: 0.86; --op: 0.94; --ry: -10deg"
-          ></div>
+            style="
+              --tx: var(--shift);
+              --scale: 0.86;
+              --op: 0.94;
+              --ry: -10deg;
+              --z: 20;
+            "
+          />
         </div>
-      </div>
 
-      <div
-        v-else
-        class="carousel"
-        @mouseenter="pauseAutoRotate"
-        @mouseleave="resumeAutoRotate"
-      >
-        <div v-if="hasBooks" class="carouselStage">
+        <div v-else class="carouselStage">
           <button
-            v-for="(book, bookIndex) in popularBooks"
-            :key="book.id"
+            v-for="(book, i) in popularBooks"
+            :key="(getBookId(book) ?? i) + '-popular'"
             class="carouselCard"
             type="button"
-            :style="getCarouselStyle(bookIndex)"
-            @mouseenter="focusBook(bookIndex)"
-            @click="goDetail(book.id)"
+            :style="popularCarousel.getStyle(i)"
+            @mouseenter="popularCarousel.focus(i)"
+            @click="goArticle(book)"
           >
-            <!-- 왕관/등수: '전체 TOP5 순위' 기준 -->
-            <div
-              v-if="bookIndex === 0"
-              class="badge crown crownGold"
-              aria-label="1등"
-            >
+            <div v-if="i === 0" class="badge crown crownGold" aria-label="1등">
               <svg viewBox="0 0 24 24" class="crownIcon" aria-hidden="true">
                 <path
                   fill="currentColor"
@@ -258,9 +349,8 @@ const hasBooks = computed(() => popularBooks.value.length > 0);
                 />
               </svg>
             </div>
-
             <div
-              v-else-if="bookIndex === 1"
+              v-else-if="i === 1"
               class="badge crown crownSilver"
               aria-label="2등"
             >
@@ -271,9 +361,8 @@ const hasBooks = computed(() => popularBooks.value.length > 0);
                 />
               </svg>
             </div>
-
             <div
-              v-else-if="bookIndex === 2"
+              v-else-if="i === 2"
               class="badge crown crownBronze"
               aria-label="3등"
             >
@@ -284,45 +373,126 @@ const hasBooks = computed(() => popularBooks.value.length > 0);
                 />
               </svg>
             </div>
+            <div v-else class="badge rank">#{{ i + 1 }}</div>
 
-            <div v-else class="badge rank">#{{ bookIndex + 1 }}</div>
-
-            <!-- 표지로 꽉 채우기 -->
             <div
               class="coverFill"
               :style="
-                book.cover ? { backgroundImage: `url(${book.cover})` } : {}
+                getCoverUrl(book)
+                  ? { backgroundImage: `url(${getCoverUrl(book)})` }
+                  : {}
               "
             >
               <div class="coverOverlay">
-                <div class="bookTitle" :title="book.title">
-                  {{ book.title }}
+                <div class="bookTitle" :title="getTitle(book)">
+                  {{ getTitle(book) }}
                 </div>
-                <div class="bookAuthor" :title="book.author">
-                  {{ book.author }}
+                <div class="bookAuthor" :title="getAuthor(book)">
+                  {{ getAuthor(book) }}
                 </div>
               </div>
-
-              <div v-if="!book.cover" class="noCover">No Image</div>
+              <div v-if="!getCoverUrl(book)" class="noCover">No Image</div>
             </div>
           </button>
         </div>
 
-        <p v-else class="muted">인기 도서 데이터가 없습니다.</p>
-
-        <!-- 점 인디케이터 (클릭하면 해당 책을 가운데로) -->
+        <!-- ✅ dots active 표시: .value -->
         <div
           v-if="popularBooks.length > 1"
           class="dots"
-          aria-label="carousel indicator"
+          aria-label="popular indicator"
         >
           <button
-            v-for="(book, dotIndex) in popularBooks"
-            :key="book.id + '-dot'"
+            v-for="(book, di) in popularBooks"
+            :key="(getBookId(book) ?? di) + '-p-dot'"
             class="dot"
             type="button"
-            :class="{ active: dotIndex === activeIndex }"
-            @click="focusBook(dotIndex)"
+            :class="{ active: di === popularCarousel.activeIndex.value }"
+            @click="popularCarousel.focus(di)"
+          />
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================
+      추천 TOP5
+      - 로그인 전: 블러 + 중앙 문구 + dots 없음 + hover 반응 없음(회전만)
+      - 로그인 후: hover/클릭/점 모두 활성화(인기 TOP5 동일 동작)
+    ========================= -->
+    <section class="section">
+      <div class="sectionHeader">
+        <h2 class="sectionTitle">추천 도서 TOP5</h2>
+        <p class="sectionSub">회원 전용 추천 기능입니다.</p>
+      </div>
+
+      <p v-if="recommendedError" class="error">{{ recommendedError }}</p>
+
+      <div
+        class="carousel recommendedWrap"
+        @mouseenter="isLoggedIn && recommendedCarousel.pause()"
+        @mouseleave="isLoggedIn && recommendedCarousel.resume()"
+      >
+        <div class="carouselStage" :class="{ locked: !isLoggedIn }">
+          <div v-if="recommendedLoading" class="loadingLayer">
+            <div class="muted">불러오는 중...</div>
+          </div>
+
+          <button
+            v-for="(book, i) in recommendedBooks"
+            :key="(getBookId(book) ?? i) + '-rec'"
+            class="carouselCard"
+            type="button"
+            :style="recommendedCarousel.getStyle(i)"
+            @mouseenter="isLoggedIn && recommendedCarousel.focus(i)"
+            @click="isLoggedIn && goArticle(book)"
+          >
+            <div
+              class="coverFill"
+              :style="
+                getCoverUrl(book)
+                  ? { backgroundImage: `url(${getCoverUrl(book)})` }
+                  : {}
+              "
+            >
+              <div class="coverOverlay">
+                <div class="bookTitle" :title="getTitle(book)">
+                  {{ getTitle(book) }}
+                </div>
+                <div class="bookAuthor" :title="getAuthor(book)">
+                  {{ getAuthor(book) }}
+                </div>
+              </div>
+              <div v-if="!getCoverUrl(book)" class="noCover">No Image</div>
+            </div>
+          </button>
+        </div>
+
+        <!-- ✅ 로그인 전 문구: stage 밖(블러 영향 없음) -->
+        <div
+          v-if="!isLoggedIn"
+          class="lockedOverlay"
+          role="button"
+          tabindex="0"
+          @click="goLogin"
+          @keydown.enter="goLogin"
+          @keydown.space.prevent="goLogin"
+        >
+          <div class="lockedPill">로그인을 하고 추천 도서를 알아보세요!</div>
+        </div>
+
+        <!-- ✅ (요구사항 1) 로그인 전에는 dots 없음 -->
+        <div
+          v-if="isLoggedIn && recommendedBooks.length > 1"
+          class="dots"
+          aria-label="recommended indicator"
+        >
+          <button
+            v-for="(book, di) in recommendedBooks"
+            :key="(getBookId(book) ?? di) + '-r-dot'"
+            class="dot"
+            type="button"
+            :class="{ active: di === recommendedCarousel.activeIndex.value }"
+            @click="recommendedCarousel.focus(di)"
           />
         </div>
       </div>
@@ -348,7 +518,6 @@ const hasBooks = computed(() => popularBooks.value.length > 0);
   border-radius: 16px;
   background: #ffffff;
 }
-
 .heroLeft {
   flex: 1;
 }
@@ -363,7 +532,6 @@ const hasBooks = computed(() => popularBooks.value.length > 0);
   opacity: 0.75;
   line-height: 1.5;
 }
-
 .heroActions {
   margin-top: 14px;
   display: flex;
@@ -379,7 +547,6 @@ const hasBooks = computed(() => popularBooks.value.length > 0);
   font-weight: 800;
   cursor: pointer;
 }
-
 .heroRight {
   width: 260px;
   display: flex;
@@ -421,8 +588,8 @@ const hasBooks = computed(() => popularBooks.value.length > 0);
 /* CAROUSEL */
 .carousel {
   margin-top: 10px;
+  position: relative;
 }
-
 .carouselStage {
   --shift: min(260px, 28vw);
   --cardW: clamp(190px, 34vw, 290px);
@@ -435,9 +602,13 @@ const hasBooks = computed(() => popularBooks.value.length > 0);
   border: 1px solid #e8e8e8;
   background: #fafafa;
   overflow: hidden;
-
-  display: block;
   perspective: 1100px;
+}
+
+/* 로그인 전 추천 블러 */
+.carouselStage.locked {
+  filter: blur(12px) brightness(0.88) saturate(0.9);
+  transform: translateZ(0);
 }
 
 .carouselCard {
@@ -465,7 +636,6 @@ const hasBooks = computed(() => popularBooks.value.length > 0);
 
   will-change: transform, opacity;
 }
-
 .carouselCard:hover {
   border-color: #bdbdbd;
 }
@@ -502,7 +672,6 @@ const hasBooks = computed(() => popularBooks.value.length > 0);
   align-items: center;
   justify-content: center;
 }
-
 .rank {
   font-size: 12px;
   font-weight: 900;
@@ -517,7 +686,6 @@ const hasBooks = computed(() => popularBooks.value.length > 0);
   width: 34px;
   height: 34px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(2px);
 }
 .crownIcon {
@@ -525,7 +693,6 @@ const hasBooks = computed(() => popularBooks.value.length > 0);
   height: 20px;
   color: #111;
 }
-
 .crownGold {
   background: #d4af37;
 }
@@ -536,7 +703,7 @@ const hasBooks = computed(() => popularBooks.value.length > 0);
   background: #cd7f32;
 }
 
-/* cover fill */
+/* cover */
 .coverFill {
   width: 100%;
   height: 100%;
@@ -546,8 +713,6 @@ const hasBooks = computed(() => popularBooks.value.length > 0);
   background-repeat: no-repeat;
   position: relative;
 }
-
-/* title overlay */
 .coverOverlay {
   position: absolute;
   left: 0;
@@ -558,7 +723,6 @@ const hasBooks = computed(() => popularBooks.value.length > 0);
   background: linear-gradient(to top, rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0));
   color: #fff;
 }
-
 .bookTitle {
   font-weight: 900;
   line-height: 1.25;
@@ -567,7 +731,6 @@ const hasBooks = computed(() => popularBooks.value.length > 0);
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-
 .bookAuthor {
   margin-top: 6px;
   font-size: 13px;
@@ -576,7 +739,6 @@ const hasBooks = computed(() => popularBooks.value.length > 0);
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .noCover {
   position: absolute;
   inset: 0;
@@ -594,7 +756,38 @@ const hasBooks = computed(() => popularBooks.value.length > 0);
   border: 1px solid #e8e8e8;
 }
 
-/* misc */
+/* recommended overlay (로그인 전 문구) */
+.recommendedWrap {
+  position: relative;
+}
+.lockedOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lockedPill {
+  background: rgba(17, 17, 17, 0.92);
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 999px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+}
+
+/* loading layer */
+.loadingLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .muted {
   opacity: 0.7;
   text-align: center;
@@ -611,7 +804,6 @@ const hasBooks = computed(() => popularBooks.value.length > 0);
   .heroRight {
     width: 100%;
   }
-
   .carouselStage {
     --shift: min(190px, 34vw);
   }
