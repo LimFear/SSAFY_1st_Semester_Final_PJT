@@ -33,6 +33,7 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     'articles',
     'accounts',
+    'AIfeatures',
     'rest_framework',
     'dj_rest_auth',
     'django.contrib.sites',
